@@ -12,3 +12,7 @@
 
 # output
 **/output/
+
+**/.venv/
+**/venv/
+**/.python-version
