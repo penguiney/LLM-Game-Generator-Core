@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
 import os
+from flask import Flask, render_template, request, redirect, url_for, flash
 from config import config
 
 from src.design.chains import run_design_phase
@@ -13,7 +13,7 @@ game_file_path_global = None
 last_check_message = None
 
 # Supporting providers
-PROVIDERS = ["OpenAI", "Groq", "Mistral", "Google"]
+PROVIDERS = ["openai", "groq", "mistral", "google"]
 
 
 @app.route("/", methods=["GET", "POST"])
