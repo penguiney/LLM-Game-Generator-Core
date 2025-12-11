@@ -8,6 +8,20 @@ def generate_assets(
         provider: str = "openai",
         model: str = "gpt-4o-mini"
 ) -> str:
+    """
+    Generate the art assets for this specific game.
+    :param gdd_context: The GDD context to use
+    :type gdd_context: str
+
+    :param provider: The LLM service provider
+    :type provider: str
+
+    :param model: The LLM model to use
+    :type model: str
+
+    :return: The generated assets json
+    :rtype: str
+    """
     response = call_llm(ART_PROMPT, f"GDD Content:\n{gdd_context}", provider=provider, model=model)
 
     try:

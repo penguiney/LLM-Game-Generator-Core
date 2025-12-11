@@ -109,3 +109,35 @@ if __name__ == "__main__":
     main()
 ```
 """
+
+# [NEW] Fuzzer Script Generator Prompt
+FUZZER_GENERATION_PROMPT = """
+You are a QA Automation Engineer specializing in Pygame.
+Task: Write a "Monkey Bot" script snippet to stress-test the game described in the GDD.
+
+【GDD / RULES】:
+{gdd}
+
+【INSTRUCTIONS】:
+1. Analyze the GDD to identify VALID inputs (e.g., "Press Space to Jump", "Click to Shoot", "WASD to move").
+2. Write a Python code block that will be INJECTED inside the game's `while running:` loop.
+3. The code should RANDOMLY trigger these inputs to stress test the logic.
+4. DO NOT write the full game. Only write the input simulation logic.
+5. Use `pygame.event.post` to simulate inputs.
+
+【EXAMPLE OUTPUT FORMAT】:
+```python
+# Randomly move
+if random.random() < 0.1:
+    keys = [pygame.K_LEFT, pygame.K_RIGHT, pygame.K_UP, pygame.K_DOWN]
+    pygame.event.post(pygame.event.Event(pygame.KEYDOWN, {'key': random.choice(keys), 'unicode': ''}))
+
+# Randomly shoot (if GDD mentions shooting)
+if random.random() < 0.05:
+    mx = random.randint(0, 800)
+    my = random.randint(0, 600)
+    pygame.event.post(pygame.event.Event(pygame.MOUSEBUTTONDOWN, {'pos': (mx, my), 'button': 1}))
+```
+
+Now, generate the test logic for this specific game:
+"""
