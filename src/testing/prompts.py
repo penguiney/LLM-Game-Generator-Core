@@ -1,58 +1,57 @@
-# Reviewer / Fixer Prompt
-FIXER_PROMPT: str = """
+# Reviewer / Fixer Prompt (For Syntax & Runtime Errors)
+FIXER_PROMPT = """
 You are a Python Expert and QA Engineer.
-I tried to run a Pygame script, but it crashed or had logic errors.
+I tried to run a Pygame script, but it crashed or had errors.
 
 【BROKEN CODE】:
 {code}
 
-【ERROR MESSAGE / LOGIC ISSUE】:
+【ERROR MESSAGE】:
 {error}
 
 【TASK】:
-1. Analyze the error message and the code.
-2. Fix the error (e.g., missing imports, undefined variables, logic errors, unresponsive controls).
+1. Analyze why the error happened.
+   - If `NameError` (e.g., 'pockets' is not defined), checking variable scope.
+   - If `TypeError: ... missing 1 required positional argument` in `update()`:
+     - **FIX**: Make `update()` accept `*args` (e.g., `def update(self, *args):`).
+2. Fix the code.
 3. Output the FULL, CORRECTED code.
-4. Ensure the code still follows the structure:
-    - import pygame
-    - pygame.init()
-    - Game Loop
-    - if __name__ == "__main__":
+4. Ensure the code still follows the structure.
 
 Return the fixed code inside a ```python ... ``` block.
 """
 
-# Logics inspections
+# Logic Reviewer Prompt
 LOGIC_REVIEW_PROMPT = """
 You are a Senior Game Developer reviewing Pygame code.
-Analyze the following code for LOGIC ERRORS, specifically regarding CONTROLS and MOVEMENT based on GDD.
-
-【CODE】:
-{code}
+Analyze the following code for LOGIC ERRORS.
 
 【GDD requirements】:
 {gdd}
+
+【CODE】:
+{code}
 
 【CHECKLIST】:
 1. Is `pygame.key.get_pressed()` called inside the main loop?
-2. Are movement keys (WASD or Arrows) actually modifying the player's `rect.x` / `rect.y` or position variables?
-3. Is the player's speed/velocity non-zero? (Look for `speed = 0` bugs)
-4. Is `pygame.event.get()` called correctly to prevent freezing?
-5. Is the screen updated with `pygame.display.flip()` or `update()`?
+2. Are movement keys actually updating position?
+3. Is `pygame.display.flip()` or `update()` called?
+4. **Physics Check**:
+   - Is `self.rect.center` or `self.pos` updated by `self.velocity` in the `update()` loop?
+   - Is `friction` too high? (Should be around 0.98 or 0.99, NOT 0.5 or lower).
+5. **Mouse Dragging**:
+   - Does `MOUSEBUTTONUP` calculate a vector and apply it to `self.velocity`?
 
-【OUTPUT FORMAT】:
-If the code is good and playable: strictly output: PASS
-
-If there are logic issues (e.g., player cannot move, missing update), output:
-FAIL: [Brief explanation of the error]
+【OUTPUT】:
+If playable, output strictly: PASS
+If broken, output: FAIL: [Reason]
 """
 
+# Logic Fixer Prompt (強制修復物理)
 LOGIC_FIXER_PROMPT = """
-You are a Pygame Expert and QA Engineer.
-Help me Fix the codes based on GDD below, and return the results codes to me.
+You are a Python Game Developer.
+The code has logical issues (e.g., objects not moving, controls unresponsive).
 
-【ERROR MESSAGE / LOGIC ISSUE】:
-{error}
 
 【GDD requirements】:
 {gdd}
@@ -60,6 +59,14 @@ Help me Fix the codes based on GDD below, and return the results codes to me.
 【CODE】:
 {code}
 
-【OUTPUT FORMAT】:
-A valid pygame python file
+【TASK】:
+1. **Fix Physics Update**: 
+   - Ensure `self.pos += self.velocity` is present in `update()`.
+   - Ensure `self.rect.center` is updated from `self.pos`.
+2. **Fix Mouse Control**:
+   - For Drag-to-Shoot games: Ensure `MOUSEBUTTONUP` calculates `(start - end)` and sets `self.velocity`.
+   - Ensure Force Multiplier is strong enough (e.g., `vector * 0.1` might be too weak, try `vector * 0.5`).
+3. **Fix Friction**:
+   - Ensure friction is NOT too strong (Use `0.99` instead of `0.8`).
+4. Output the FULL corrected code in ```python ... ``` block.
 """
