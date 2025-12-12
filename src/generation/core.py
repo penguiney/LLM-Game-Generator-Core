@@ -60,8 +60,9 @@ def generate_fuzzer_logic(
     :return: The generated code
     :rtype: str
     """
+    print("[Member 2] Start to generate fuzzer logic")
+    prompt = FUZZER_GENERATION_PROMPT.replace("{gdd}", gdd_context)
     print("[Member 2] Generating the custom fuzzer test script (Fuzzer)...")
-    prompt = FUZZER_GENERATION_PROMPT.format(gdd=gdd_context)
     return call_llm("You are a QA Engineer.", prompt, provider=provider, model=model)
 
 

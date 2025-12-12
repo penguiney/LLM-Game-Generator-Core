@@ -14,7 +14,7 @@ game_file_path_global = None
 last_check_message = None
 
 # Supporting providers
-PROVIDERS = ["openai", "groq", "mistral", "google", "ollama"]
+PROVIDERS = ["openai", "groq", "mistral", "google", "ollama", "deepseek"]
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -52,6 +52,8 @@ def index():
                 gdd_result_global = run_design_phase(user_input, provider, model_name)
                 # --- Phase 2: Core ---
                 game_file_path_global = run_core_phase(gdd_result_global, provider, model_name)
+
+                print("[Member 2] Generation complete")
 
                 if game_file_path_global:
                     # --- Phase 3: QA ---

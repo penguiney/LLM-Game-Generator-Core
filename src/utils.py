@@ -28,6 +28,11 @@ def get_client_config(provider: str) -> dict | None:
             "api_key": config.MISTRAL_API_KEY,
             "base_url": "https://api.mistral.ai/v1"
         }
+    elif provider == "deepseek":
+        return {
+            "api_key": config.DEEPSEEK_API_KEY,
+            "base_url": "https://api.deepseek.com/v1"
+        }
     return None
 
 
@@ -83,20 +88,20 @@ def call_llm(system_prompt: str, user_prompt: str, provider: str ="openai",
             model = "gemini-2.5-flash"
         return call_google_gemini(system_prompt, user_prompt, model, temperature)
 
-    # --- OpenAI Compatible APIs (Groq, Ollama, Mistral) ---
-    openai_config: dict | None = get_client_config(provider)
+    openai_config = get_client_config(provider)
+    if not openai_config: return f"Error: 不支援的 Provider '{provider}'"
 
-    if not openai_config:
-        return f"Error: 不支援的 Provider '{provider}'"
+    # [FIX] 使用 .get() 避免 KeyError: 'key' 或 'api_key'
+    api_key = openai_config.get("api_key")
+    base_url = openai_config.get("base_url")
 
-    if not openai_config["api_key"] and provider != "ollama":
+    # 檢查 Key 是否存在 (Ollama 除外)
+    if not api_key and provider != "ollama":
         return f"Error: 請在 .env 設定 {provider.upper()}_API_KEY"
 
     try:
-        client = openai.OpenAI(
-            api_key=openai_config["api_key"],
-            base_url=openai_config["base_url"]
-        )
+        # 初始化 OpenAI Client
+        client = openai.OpenAI(api_key=api_key, base_url=base_url)
 
         response = client.chat.completions.create(
             model=model,
@@ -104,9 +109,14 @@ def call_llm(system_prompt: str, user_prompt: str, provider: str ="openai",
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=temperature
+            temperature=temperature,
+            timeout=600,  # [FIX] 強制設定 600秒 超時
+            max_tokens=8192  # [FIX] 強制設定最大 Token 數，避免 DeepSeek 截斷
         )
         return response.choices[0].message.content
-
+    except KeyError as e:
+        print(f"[LLM Config Error] Missing key: {e}")  # [FIX] 加入錯誤列印，方便除錯
+        return f"Configuration Error: Missing key {str(e)}"
     except Exception as e:
+        print(f"[LLM Call Error] Provider: {provider}, Error: {e}")  # [FIX] 加入錯誤列印，方便除錯
         return f"LLM Call Error ({provider}): {str(e)}"

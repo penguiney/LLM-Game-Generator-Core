@@ -54,7 +54,25 @@ def inject_monkey_bot(code_content: str, bot_logic: str) -> str:
     :rtype: str
     """
 
-    # 1. Handle the indent and the variable name of the bot_logic
+    # 1. 前處理：過濾掉會造成 Variable Shadowing 的 import 語句
+    lines = bot_logic.splitlines()
+    filtered_lines = []
+    for line in lines:
+        stripped = line.strip()
+        # [FIX] 如果 AI 生成了 import pygame 或 import random，直接丟棄該行
+        # 因為 pygame 是全域的，random 我們會用 _monkey_random 取代
+        if stripped.startswith("import pygame") or stripped.startswith("from pygame"):
+            continue
+        if stripped.startswith("import random"):
+            continue
+        filtered_lines.append(line)
+
+    if not filtered_lines:
+        filtered_lines = ["pass"]
+
+    # 重新組合成字串
+    bot_logic = "\n".join(filtered_lines)
+    # 2. Handle the indent and the variable name of the bot_logic
     bot_logic = textwrap.dedent(bot_logic).strip()
 
     bot_logic = bot_logic.replace("random.", "_monkey_random.")
@@ -65,7 +83,7 @@ def inject_monkey_bot(code_content: str, bot_logic: str) -> str:
 
     indented_logic = "\n".join(["            " + line for line in lines])
 
-    # 2. Define the injection template
+    # 3. Define the injection template
     # Use "import random as _monkey_random" to avoid the conflict.
     monkey_bot_template = """
     # --- [INJECTED DYNAMIC MONKEY BOT START] ---
@@ -85,7 +103,7 @@ def inject_monkey_bot(code_content: str, bot_logic: str) -> str:
     # Handle the indentation
     monkey_bot_code = textwrap.dedent(monkey_bot_code).strip()
 
-    # 3. Find injection point (Main Loop) and detect the indentation
+    # 4. Find injection point (Main Loop) and detect the indentation
     pattern = r"^([ \t]*)while\s+.*:"
     matches = list(re.finditer(pattern, code_content, re.MULTILINE))
 
@@ -93,7 +111,7 @@ def inject_monkey_bot(code_content: str, bot_logic: str) -> str:
         last_match = matches[-1]
         insertion_point = last_match.end()
 
-        # 4. Dynamically calculate the target indentation
+        # 5. Dynamically calculate the target indentation
         current_indent = last_match.group(1)
         target_indent = current_indent + "    "
 
