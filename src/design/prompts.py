@@ -32,10 +32,10 @@ Instructions:
 - For each input, describe its purpose in the game, e.g., "Left Mouse Button → Shoot", "Arrow Keys → Move Character".  
 - Present the inputs and their functions in a list or table format.
 - Define any limits or constraints (speed, cooldown, boundaries).
-- Before starting the game, all the player controls must be listed on the screen with a black color text. left click to dismiss them and begin the game.
 
 ### 4. interactions
-- Detail interactions with game entities (e.g., enemies, items, obstacles).
+- List all game entities in the game (e.g., enemies, items, obstacles).
+- Describe how the player interacts with each game entity, and how the entities interact each other.
 
 ### 5. Core loop
 - Specify any core mechanics that drive the game loop.
