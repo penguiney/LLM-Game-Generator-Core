@@ -9,7 +9,19 @@
 <div class="container">
   <h1>🎮 ChatDev: Pygame 自動生成工廠 (Flask Ver.)</h1>
   <hr>
+  <!-- Auto fixing messages -->
+  <div class="card mt-4">
+      <div class="card-header">自動修復與驗證 (Member 3)</div>
+      <div class="card-body">
+          <button id="startFixBtn" class="btn btn-primary" onclick="startFixing()">
+              開始自動修復 (Streamline)
+          </button>
 
+          <div id="logOutput" class="bg-dark text-light p-3 mt-3" style="height: 300px; overflow-y: scroll; font-family: monospace;">
+              <p class="text-muted">等待執行...</p>
+          </div>
+      </div>
+  </div>
   <!-- 顯示 Flash 訊息 -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -54,3 +66,43 @@
 </div>
 </body>
 </html>
+<script>
+    // Execute after the page loaded
+    document.addEventListener("DOMContentLoaded", function() {
+        // If backend send auto_start_fix = True, automatically start
+        const shouldAutoStart = {{ 'true' if auto_start_fix else 'false' }};
+
+        if (shouldAutoStart) {
+            startFixing();
+        }
+    });
+
+    function startFixing() {
+        const logDiv = document.getElementById('logOutput');
+        logDiv.innerHTML = "<p>連接修復服務中...</p>";
+
+        const eventSource = new EventSource("/fix_stream");
+
+        eventSource.onmessage = function(event) {
+            const msg = event.data; // This will remove data: and \n\n automatically
+
+            if (msg.includes("RESULT_SUCCESS")) {
+                // Successful
+                eventSource.close();
+                // refresh and show new codes
+                location.reload();
+            } else if (msg.includes("RESULT_FAIL")) {
+                // failure handling
+                eventSource.close();
+            } else {
+                // Logs
+                document.getElementById("logOutput").innerHTML += `<p>${msg}</p>`;
+            }
+        };
+
+        eventSource.onerror = function(err) {
+            console.error("Stream error:", err);
+            eventSource.close();
+        };
+    }
+</script>

@@ -48,6 +48,7 @@ Analyze the following code for LOGIC ERRORS. Do NOT hallucinate checks that aren
 2. **Physics/Update**:
    - Is `self.rect.center` updated by `self.pos`?
    - Is `pygame.display.flip()` called?
+   - Is the friction and the reflection reasonable?
 
 3. **Controls**:
    - Are keys/mouse inputs handled?
@@ -61,6 +62,9 @@ If unsafe (missing None checks), output: FAIL: [Line number/Function] accesses N
 LOGIC_FIXER_PROMPT = """
 You are a Python Game Developer.
 The code has logical issues (e.g., crashes on empty cells, objects not moving).
+【Error Messages】
+{error}
+
 
 【CODE】:
 {code}

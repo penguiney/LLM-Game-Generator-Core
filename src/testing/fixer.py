@@ -1,11 +1,10 @@
-from typing import Optional
+from typing import Optional, Any, Generator
 
 from src.utils import call_llm
 from src.testing.prompts import FIXER_PROMPT, LOGIC_REVIEW_PROMPT, LOGIC_FIXER_PROMPT
 from src.generation.file_utils import save_code_to_file
 from src.testing.fuzzer import run_fuzz_test
 from config import config
-from flask import flash
 import os
 import ast
 
@@ -69,57 +68,61 @@ def run_fix(file_path: str, error_message: str, provider: str = "openai"
     new_path: str | None = save_code_to_file(response, output_dir=output_dir)
 
     if new_path:
-        return new_path, "修復完成，已更新代碼。"
+        return new_path, response
     else:
-        return None, "AI 無法生成有效的 Python 代碼區塊。"
+        return None, response
+
 
 def run_fix_loop(gdd: str, file_path: str, provider: str = "openai",
-                 model: str = "gpt-4o-mini") -> bool:
+                 model: str = "gpt-4o-mini") -> Generator[str, None, None]:
     """
-    :param gdd:
-    :param file_path:
-    :param provider:
-    :param model:
-    :return: (fixed_file_path, result)
+    Generator function for SSE (Server-Sent Events).
+    Yields strings in the format: "data: <message>\n\n"
     """
-    print(f"[Member 3] 收到需求: {file_path}")
+    yield f"data: [Member 3] 收到需求，開始驗證: {os.path.basename(file_path)}\n\n"
 
     max_retries: int = 3
     game_is_valid = False
     error_msg = ""
+
     while (not game_is_valid) and (max_retries > 0):
         syntax_is_valid, error_msg = static_code_check(file_path)
         if not syntax_is_valid:
-            flash(f"❌ 語法錯誤: {error_msg}", "danger")
+            yield f"data: ❌ 語法錯誤: {error_msg} (嘗試修復中...)\n\n"
             print(f"[Member3]: ❌ 語法錯誤: {error_msg}")
+
             file_path, error_msg = run_fix(file_path, error_msg, provider, model, "syntax")
             max_retries -= 1
             continue
-        print(f"[Member3]: ✅ 語法正確")
+
+        yield "data: ✅ 語法正確\n\n"
 
         logic_is_valid, error_msg = game_logic_check(gdd, file_path, provider, model)
         if not logic_is_valid:
-            flash(f"❌ 邏輯錯誤: {error_msg}", "danger")
+            yield f"data: ❌ 邏輯錯誤: {error_msg} (嘗試修復中...)\n\n"
             print(f"[Member3]: ❌ 邏輯錯誤: {error_msg}")
+
             file_path, error_msg = run_fix(file_path, error_msg, provider, model, "logic", gdd)
             max_retries -= 1
             continue
 
-        print(f"[Member3]: ✅ 邏輯正確")
-
+        yield "data: ✅ 邏輯正確\n\n"
 
         fuzz_passed, error_msg = run_fuzz_test(file_path, config.FUZZER_RUNNING_TIME)
         if not fuzz_passed:
-            flash(f"❌ 運行時錯誤 (Fuzzer): {error_msg}", "danger")
+            yield f"data: ❌ 運行時錯誤 (Fuzzer): {error_msg} (嘗試修復中...)\n\n"
             print(f"[Member3]: ❌ 運行時錯誤 (Fuzzer): {error_msg}")
+
             file_path, error_msg = run_fix(file_path, error_msg, provider, model, "logic", gdd)
             max_retries -= 1
             continue
 
-        print(f"[Member3]: ✅ 運行功能正確")
+        yield "data: ✅ 運行功能正確\n\n"
 
         game_is_valid = True
-        flash("✅ 程式碼通過驗證", "success")
-        max_retries -= 1
 
-    return game_is_valid
+    # The format let js can detect finished
+    if game_is_valid:
+        yield "data: RESULT_SUCCESS: 程式碼通過所有驗證！\n\n"
+    else:
+        yield "data: RESULT_FAIL: 已達最大重試次數，驗證失敗。\n\n"
