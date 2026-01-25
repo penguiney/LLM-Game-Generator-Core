@@ -1,6 +1,9 @@
 **/*.env
 
 
+**/flask_session/
+
+
 # ide
 .idea
 .vscode
